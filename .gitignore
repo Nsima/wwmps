@@ -40,6 +40,13 @@ build/Release
 
 # Dependency directories
 node_modules/
+.env
+dist/
+build/
+.vscode/
+.DS_Store
+*.log
+
 jspm_packages/
 
 # Snowpack dependency directory (https://snowpack.dev/)
