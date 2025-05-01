@@ -13,7 +13,7 @@ export default function HomePage() {
   // Simulate fetching reflection automatically
   useEffect(() => {
     if (question.trim()) {
-      setReflection(`"${selectedPastor}" reflects on: "${question}"`);
+      setReflection(`"${selectedPastor}" would say: "${question}"`);
     } else {
       setReflection('');
     }
