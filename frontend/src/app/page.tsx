@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import ModelSelector from '@/components/ModelSelector';
 import QuestionInput from '@/components/QuestionInput';
-//import ReflectionOutput from '@/components/ReflectionOutput';
+import ReflectionOutput from '@/components/ReflectionOutput';
 
 export default function HomePage() {
   const [selectedPastor, setSelectedPastor] = useState('Pastor David Oyedepo');
@@ -38,7 +38,7 @@ export default function HomePage() {
       <hr className="my-6 border-gray-200" />
 
       <section>
-        {/*<ReflectionOutput reflection={reflection} />*/}
+        <ReflectionOutput reflection={reflection} />
       </section>
     </main>
   );
