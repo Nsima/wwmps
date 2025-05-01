@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-//import ModelSelector from '@/components/ModelSelector';
+import ModelSelector from '@/components/ModelSelector';
 //import QuestionInput from '@/components/QuestionInput';
 //import ReflectionOutput from '@/components/ReflectionOutput';
 
@@ -28,7 +28,7 @@ export default function HomePage() {
       </header>
 
       <section className="mb-6">
-        {/*<ModelSelector selected={selectedPastor} onChange={setSelectedPastor} /> */}
+        <ModelSelector selected={selectedPastor} onChange={setSelectedPastor} />
       </section>
 
       <section className="mb-6">
