@@ -61,8 +61,17 @@ def transcribe_audio(file_name):
         "--output_format", "srt",
         "--output_dir", SUBTITLE_DIR
     ]
-    print(f"[🧠] Transcribing {file_name}...")
-    run_command(command)
+    print(f"[🧠] Transcribing {file_name}... (live log in transcription.log)")
+    
+    with open("transcription.log", "a", encoding="utf-8") as log:
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        for line in process.stdout:
+            print(line, end="")       # Live output to terminal
+            log.write(line)           # Save to file
+        process.wait()
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(process.returncode, command)
+
 
 def delete_file(path):
     try:
