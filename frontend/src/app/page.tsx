@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import ModelSelector from '@/components/ModelSelector';
-//import QuestionInput from '@/components/QuestionInput';
+import QuestionInput from '@/components/QuestionInput';
 //import ReflectionOutput from '@/components/ReflectionOutput';
 
 export default function HomePage() {
@@ -32,7 +32,7 @@ export default function HomePage() {
       </section>
 
       <section className="mb-6">
-        {/*<QuestionInput question={question} onChange={setQuestion} />*/}
+        <QuestionInput question={question} onChange={setQuestion} />
       </section>
 
       <hr className="my-6 border-gray-200" />
