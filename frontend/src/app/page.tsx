@@ -5,6 +5,7 @@ import { useState } from 'react';
 //import QuestionInput from '@/components/QuestionInput';
 //import ReflectionOutput from '@/components/ReflectionOutput';
 //import SaveShareControls from '@/components/SaveShareControls';
+import { BookOpenIcon, SparklesIcon } from '@heroicons/react/24/solid';
 
 export default function HomePage() {
   const [selectedPastor, setSelectedPastor] = useState('Pastor David Oyedepo');
@@ -12,37 +13,46 @@ export default function HomePage() {
   const [reflection, setReflection] = useState('');
 
   return (
-    <main className="min-h-screen bg-white text-gray-900 px-4 py-8 max-w-2xl mx-auto">
-      <header className="mb-8 text-center">
-        <h1 className="text-2xl font-semibold">
-          What would <span className="text-blue-600">{selectedPastor}</span> say?
+    <main className="min-h-screen bg-gradient-to-b from-white to-blue-50 text-gray-900 px-4 py-8 max-w-2xl mx-auto font-sans">
+      <header className="mb-10 text-center">
+        <div className="flex justify-center mb-2">
+          <SparklesIcon className="h-8 w-8 text-blue-500" />
+        </div>
+        <h1 className="text-3xl font-bold">
+          What would <span className="text-blue-700">{selectedPastor}</span> say?
         </h1>
+        <p className="text-sm text-gray-500 mt-2">Get ethical and spiritual guidance drawn from real sermons</p>
       </header>
 
       <section className="mb-6">
-        {/* <ModelSelector selected={selectedPastor} onChange={setSelectedPastor} /> */}
+        {/*<ModelSelector selected={selectedPastor} onChange={setSelectedPastor} /> */}
       </section>
 
       <section className="mb-6">
-       {/* <QuestionInput question={question} onChange={setQuestion} /> */}
+        {/*<QuestionInput question={question} onChange={setQuestion} /> */}
       </section>
 
       <section className="mb-6 flex items-center justify-between gap-4">
         <button
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-xl hover:bg-blue-700 transition"
           onClick={() => {
             setReflection(`Reflection from ${selectedPastor} about: "${question}"`);
           }}
         >
-          ✨ Submit
+          <SparklesIcon className="h-5 w-5" />
+          Submit
         </button>
-       {/* <SaveShareControls reflection={reflection} /> */}
+        {/*<SaveShareControls reflection={reflection} /> */}
       </section>
 
       <hr className="my-6 border-gray-300" />
 
-      <section>
-      {/*  <ReflectionOutput reflection={reflection} /> */}
+      <section className="bg-white shadow-sm rounded-xl p-4">
+        <div className="flex items-center gap-2 mb-2 text-blue-700 font-semibold">
+          <BookOpenIcon className="h-6 w-6" />
+          Reflection
+        </div>
+        {/*<ReflectionOutput reflection={reflection} /> */}
       </section>
     </main>
   );
