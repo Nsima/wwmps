@@ -107,7 +107,7 @@ def main():
         process_video(url)
         mark_as_processed(url)
 
-    sync_to_gdrive()
+    """sync_to_gdrive()"""
     print("[✅] All videos processed and .srt files synced to Drive.")
 
 if __name__ == "__main__":
