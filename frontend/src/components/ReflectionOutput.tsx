@@ -12,7 +12,7 @@ export default function ReflectionOutput({ reflection }: ReflectionOutputProps) 
       {reflection ? (
         <p className="whitespace-pre-line">{reflection}</p>
       ) : (
-        <p className="text-gray-400 italic">Your reflection will appear here...</p>
+        <p className="text-gray-400 italic">Response would appear here...</p>
       )}
     </div>
   );
