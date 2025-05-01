@@ -50,6 +50,7 @@ build/
 #Generated data
 /tools/audio/
 /tools/subtitles/
+/tools/clean_text/
 
 
 jspm_packages/
