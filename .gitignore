@@ -47,6 +47,11 @@ build/
 .DS_Store
 *.log
 
+#Generated data
+/tools/audio/
+/tools/subtitles/
+
+
 jspm_packages/
 
 # Snowpack dependency directory (https://snowpack.dev/)
