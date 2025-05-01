@@ -1,90 +1,89 @@
-### 📓 Developer Diary: Subtitle Automation Pipeline  
+### 📓 Dev Diary: Cooking Up the Subtitle Scraper 🍿  
 **Date:** April 30, 2025  
-**Author:** George Nsima
+**By:** George Nsima (a.k.a. "Mr. Save my internet cost")
 
 ---
 
-#### 📌 Project Goal
+#### 🎯 Mission Brief
 
-Build an efficient, low-bandwidth system to **extract subtitles from YouTube videos**, either directly via captions or by **generating transcripts using Whisper**, and save the results in `.srt` format — with **minimal impact on local internet usage**.
+The goal? Build a smart, low-bandwidth pipeline to **grab subtitles from YouTube videos** — whether they come gift-wrapped (captions) or need to be crafted from scratch (via Whisper AI). Oh, and it had to use almost **zero local internet**, because data subscriptions here ain’t cheap.
 
-My main constraint was **limited data subscription** on my local ISP, so I opted to offload the heavy lifting to my **GCP Ubuntu server**, which has better bandwidth and compute capabilities.
-
----
-
-#### ✅ Phase 1: Subtitle Scraping (yt-dlp)
-
-- Tested `yt-dlp` locally to download subtitles.
-- Learned how to list available subtitle languages and formats (`--list-subs`).
-- Used `--convert-subs srt` for clean output.
-- Built `youtubeScraper.py` to automate single subtitle downloads.
-
-**Obstacle:** Some videos didn’t have captions at all.  
-**Solution:** Pivoted to generating subtitles with OpenAI’s Whisper.
+So I spun up my trusty **GCP Ubuntu server**, gave it a latte, and put it to work.
 
 ---
 
-#### ✅ Phase 2: Whisper Transcription
+#### 🎬 Episode 1: The Sub-Ripper Awakens (yt-dlp)
 
-- Installed Whisper and dependencies locally.
-- Resolved checksum errors by clearing the `.cache/whisper` folder.
-- Realized Whisper’s `medium` model needs ~5GB VRAM; my GPU only had ~4GB.
-- Switched to the `base` model for reliable performance.
-- Successfully transcribed `.mp3` files into `.srt` using Whisper CLI.
+- Fired up `yt-dlp` to fetch subtitles like a pro.
+- Learned about subtitle formats and language codes (`--list-subs`).
+- Converted everything to `.srt` like a civilized dev.
+- Wrote `youtubeScraper.py` to automate it.
 
----
-
-#### ✅ Phase 3: Automation on GCP Server
-
-- Provisioned GCP Ubuntu VM with 50GB disk space.
-- Installed: `yt-dlp`, `ffmpeg`, `whisper`, `torch`, and `rclone`.
-- Set up folder structure:
-  - `tools/audio/` → audio files (auto-deleted)
-  - `tools/subtitles/` → subtitle files
-  - `tools/youtube_links.txt` → input URLs
-
-- Built `auto_transcribe_and_sync.py`:
-  - Reads YouTube links
-  - Downloads audio using `yt-dlp`
-  - Transcribes using Whisper
-  - Deletes audio after transcription
-  - Syncs `.srt` files to Google Drive using `rclone`
+**Plot twist:** Some videos didn’t have any captions at all 😤  
+**Fix:** Enter Whisper — the AI transcription wizard.
 
 ---
 
-#### 🧠 Key Optimizations Added
+#### 🤖 Episode 2: Whisper to the Rescue
 
-- `processed_links.log`: Skips already-processed videos
-- `failed_links.log`: Logs failed videos for retry
-- `rclone` integration: Keeps GDrive in sync
-- Cron-ready design: Can be scheduled automatically
-
----
-
-#### ⚠️ Roadblocks Faced
-
-- Corrupted Whisper model downloads (SHA mismatch)
-- Filenames with special characters breaking `ffmpeg`
-- Videos without subtitles
-- Local VRAM limitations
-- Slow CPU-only transcription
+- Installed Whisper and friends locally.
+- Hit the **SHA256 mismatch** error — fixed it by deleting `.cache/whisper`.
+- Discovered `medium` model needs ~5GB VRAM — and I had only 4GB 😩
+- Dropped to the `base` model — still solid.
+- Whisper worked its magic and gave me `.srt` files like a charm.
 
 ---
 
-#### 🚀 What's Next
+#### ☁️ Episode 3: Moving to the Cloud
 
-- `retry_failed.py` to process failed links
-- Add metadata logging for every transcription
-- Auto-translation support with Whisper
-- Containerize with Docker for portability
+- Gave GCP a mission: be my subtitle factory, let Google handle the downloading and transcription.
+- Installed all tools: `yt-dlp`, `ffmpeg`, `whisper`
+- Built out the folders:
+  - `tools/audio/` → temp audio (deleted after use)
+  - `tools/subtitles/` → all `.srt` gold
+  - `tools/youtube_links.txt` → the hit list
+
+- Crafted `auto_transcribe_and_sync.py`:
+  - Reads the URL list
+  - Downloads the audio
+  - Transcribes it via Whisper
+  - Deletes the audio (save space because its only 50GB of space)
+  - Syncs `.srt` to Google Drive via `rclone`
 
 ---
 
-### 🗓 Changelog
+#### 🧠 Tweaks I Made
+
+- `processed_links.log`: So I don’t do double work
+- `rclone`: Pushes just the `.srt` to Drive — lightweight, cheap, clean
+- Cron-friendly: The script can run itself while I sleep 😎
+
+---
+
+#### 🧱 Things That Tripped Me Up
+
+- Whisper model downloads going corrupt mid-way
+- Weird characters (like `｜｜`) breaking `ffmpeg`
+- Videos without captions or auto-captions
+- My GPU saying "nah, too heavy for me"
+- Whisper on CPU? Let’s just say it makes my grandma look fast
+
+---
+
+#### 🚧 Next on the Roadmap
+
+- Write `retry_failed.py` to give failed URLs a second chance
+- Auto-log metadata (video title, duration, model used)
+- Whisper + translation mode (multilingual → English subs)
+- Dockerize everything (why not?)
+
+---
+
+### 📜 Changelog
 
 #### v0.1.0 - April 30, 2025
-- Initial implementation of full YouTube-to-Subtitle automation
-- Added `youtubeScraper.py`, `whisperBatch.py`, and `auto_transcribe_and_sync.py`
+- First working version of the YouTube-to-Subtitle engine
+- Added: `youtubeScraper.py`, `whisperBatch.py`, `auto_transcribe_and_sync.py`
 - Integrated Whisper + yt-dlp + rclone
-- Added audio auto-deletion
-- Built tracking logs: `processed_links.log` and `failed_links.log`
+- Cleaned up audio files after use
+- Added tracking with `processed_links.log` and `failed_links.log`
