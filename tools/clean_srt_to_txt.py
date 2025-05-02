@@ -1,8 +1,8 @@
 import os
 import re
 
-SRT_FOLDER = "subtitles"
-OUTPUT_FOLDER = "clean_text"
+SRT_FOLDER = "tools/subtitles"
+OUTPUT_FOLDER = "tools/clean_text"
 
 def clean_srt_content(srt_text):
     lines = srt_text.splitlines()
