@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  transcriber:
+    build:
+      context: ../tools
+      dockerfile: Dockerfile.transcribe
+    volumes:
+      - ../tools:/app/tools
+    working_dir: /app
+    command: ["python", "pipeline_transcribe.py"]
+
+  preparer:
+    build:
+      context: ../tools
+      dockerfile: Dockerfile.prepare
+    volumes:
+      - ../tools:/app/tools
+    working_dir: /app
+    command: ["python", "pipeline_prepare_for_embedding.py"]
