@@ -50,6 +50,17 @@ So I spun up my trusty **GCP Ubuntu server**, gave it some tasks, and let it cru
   - Delete audio to save space (50GB limit!)
   - Sync `.srt` to Google Drive using `rclone`
 
+#### 🧪 Episode 4: Pipeline Consolidation
+
+- Decided to streamline the chaos in `tools/` — too many single-purpose scripts
+- Merged everything into **two powerful pipelines**:
+  - `pipeline_transcribe.py` → handles downloading, transcription, cleanup, and processed logging
+  - `pipeline_prepare_for_embedding.py` → handles .srt cleaning, metadata annotation, chunking, and export to `.jsonl`
+- This massively improved readability and reduced human error
+- Now the whole process runs in **two commands**, start to finish 🚀
+
+**Bonus Win:** Scripted chunking is now token-aware (≈400 tokens per chunk), making it embedding-ready with no extra preprocessing.
+
 ---
 
 #### 🧠 Smart Tweaks
@@ -111,21 +122,25 @@ So I spun up my trusty **GCP Ubuntu server**, gave it some tasks, and let it cru
 
 ### 📜 Changelog
 
-#### v0.4.0 - May 1, 2025
+
+#### v0.2.0 - May 3, 2025
 - Added Docker Compose setup for microservices
 - Microservices now include transcriber, cleaner, embedder, vector search, inference, metadata
+- Combined `auto_transcribe_and_sync.py`, `clean_srt_to_txt.py`, `extract_metadata.py`, and `merge_chunk_export.py` into:
+  - `pipeline_transcribe.py`
+  - `pipeline_prepare_for_embedding.py`
+- Reduced manual steps, made the workflow plug-and-play
+- Cleaned and chunked `.srt` → `.jsonl` in one pass
 
-#### v0.3.0 - May 1, 2025
+#### v0.1.2 - May 2, 2025
 - Token-aware chunking, embedding cost estimator
 - Exported `ready_for_embedding.jsonl`
-
-#### v0.2.0 - May 1, 2025
-- Added metadata extraction and merging with `.txt`
-- Cleaned `.srt` to raw text format
 
 #### v0.1.1 - May 1, 2025
 - Added live logging to Whisper transcription
 - Created `transcription.log` for tmux + `tail -f`
+- Added metadata extraction and merging with `.txt`
+- Cleaned `.srt` to raw text format
 
 #### v0.1.0 - April 30, 2025
 - First working version of the YouTube-to-Subtitle pipeline
