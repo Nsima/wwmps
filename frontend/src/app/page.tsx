@@ -12,6 +12,10 @@ export default function ChatbotLayout() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState('');
   const [selectedPastor, setSelectedPastor] = useState('Pastor David Oyedepo');
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showConversations, setShowConversations] = useState(false);
+
+
 
   const handleSend = () => {
     if (!question.trim()) return;
@@ -27,7 +31,10 @@ export default function ChatbotLayout() {
   return (
     <div className="flex">
       {/* Sidebar */}
-      <aside className="w-[300px] bg-gray-900 text-white hidden md:block">
+      <aside
+  className={`fixed top-0 left-0 h-screen w-[300px] bg-gray-900 text-white transform transition-transform duration-300 z-40
+    ${showSidebar ? 'translate-x-0' : '-translate-x-full'}`}
+>
         <div className="p-4">
           <h2 className="text-lg font-bold mb-4">Conversations</h2>
           <button className="bg-gray-700 px-4 py-2 rounded mb-4">New Conversation</button>
@@ -42,13 +49,27 @@ export default function ChatbotLayout() {
       <div className="flex-1 flex flex-col min-h-screen bg-white dark:bg-zinc-900 text-black dark:text-white">
         {/* Header */}
         <header className="flex items-center justify-between p-4 bg-gray-100 dark:bg-zinc-800">
-          <h1 className="text-xl font-semibold">
-            What would <ModelSelector selected={selectedPastor} onChange={setSelectedPastor} /> say?
+        <div className="text-center w-full">
+          <h1 className="text-2xl font-semibold mb-1">
+            What would <span className="text-blue-700">{selectedPastor}</span> say?
           </h1>
+          <div className="w-full max-w-xs mx-auto mt-2">
+            <ModelSelector selected={selectedPastor} onChange={setSelectedPastor} />
+          </div>
+        </div>
+
+          <div className="flex items-center gap-4">
+          <button
+            onClick={() => setShowSidebar(!showSidebar)}
+            className="text-sm px-3 py-1 rounded-md bg-gray-300 dark:bg-zinc-700 hover:bg-gray-400 dark:hover:bg-zinc-600"
+          >
+            {showSidebar ? 'Hide Conversations' : 'Show Conversations'}
+          </button>
           <label className="switch">
             <input type="checkbox" onChange={() => document.documentElement.classList.toggle('dark')} />
             <span className="slider round"></span>
           </label>
+        </div>
         </header>
 
         {/* Chat Messages */}
@@ -73,7 +94,7 @@ export default function ChatbotLayout() {
             e.preventDefault();
             handleSend();
           }}
-          className="flex items-center p-4 border-t dark:border-gray-700"
+          className="flex items-center p-4 border-t dark:border-gray-700 bg-white dark:bg-zinc-900 sticky bottom-0 z-30"
         >
           <input
             type="text"
@@ -90,6 +111,24 @@ export default function ChatbotLayout() {
           </button>
         </form>
       </div>
+      {showConversations && (
+        <div className="absolute top-20 right-4 w-72 bg-white dark:bg-zinc-800 shadow-xl border dark:border-zinc-700 rounded-md p-4 z-50">
+          <h2 className="text-sm font-semibold mb-2">Conversations</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+            No previous conversations yet.
+          </p>
+          <button
+            onClick={() => {
+              setMessages([]);
+              setShowConversations(false);
+            }}
+            className="text-sm w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700"
+          >
+            + New Conversation
+          </button>
+        </div>
+      )}
+
     </div>
   );
 }
