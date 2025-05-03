@@ -63,7 +63,7 @@ So I spun up my trusty **GCP Ubuntu server**, gave it some tasks, and let it cru
 
 ---
 
-#### 🧠 Smart Tweaks
+#### 🧠 Tweaks
 
 - `processed_links.log`: to prevent reprocessing
 - `failed_links.log`: to retry later
@@ -79,7 +79,7 @@ So I spun up my trusty **GCP Ubuntu server**, gave it some tasks, and let it cru
 - Video titles with symbols like `｜｜` broke `ffmpeg`
 - Some videos just don’t have captions
 - Whisper on CPU is **painfully slow** — 30-min video = ~2 hours
-- My poor GPU couldn’t keep up — Whisper said “nah bro”
+- My poor GPU couldn’t keep up — Whisper said “NOPE”
 
 ---
 
