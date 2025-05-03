@@ -1,7 +1,6 @@
 # What Would My Pastor Say?
 
-**AI-powered platform that offers spiritual and ethical reflections based on user-submitted questions or scenarios.**
-
+## Started with a simple idea: *"What would Pastor Oyedepo say if someone asked him this?"* That’s it. The goal? Let users ask questions and receive AI-generated reflections grounded in sermons and teachings from Nigerian pastors.
 ---
 
 ## 🛠 Tech Stack
