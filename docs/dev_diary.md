@@ -1,6 +1,6 @@
 ### 📓 Dev Diary: Cooking Up the Subtitle Scraper 🍿  
-**Date:** April 30, 2025  
-**By:** George Nsima (a.k.a. "Mr. Save my internet cost")
+**Date:** April 30 – May 1, 2025  
+**By:** George Nsima (a.k.a. "Mr. Save My Internet Cost")
 
 ---
 
@@ -8,7 +8,7 @@
 
 The goal? Build a smart, low-bandwidth pipeline to **grab subtitles from YouTube videos** — whether they come gift-wrapped (captions) or need to be crafted from scratch (via Whisper AI). Oh, and it had to use almost **zero local internet**, because data subscriptions here ain’t cheap.
 
-So I spun up my trusty **GCP Ubuntu server**, gave it coffee, and put it to work.
+So I spun up my trusty **GCP Ubuntu server**, gave it some tasks, and let it crunch away.
 
 ---
 
@@ -17,7 +17,7 @@ So I spun up my trusty **GCP Ubuntu server**, gave it coffee, and put it to work
 - Fired up `yt-dlp` to fetch subtitles like a pro.
 - Learned about subtitle formats and language codes (`--list-subs`).
 - Converted everything to `.srt` like a civilized dev.
-- Wrote `youtubeScraper.py` to automate it.
+- Wrote `youtubeScraper.py` to automate the process.
 
 **Plot twist:** Some videos didn’t have any captions at all 😤  
 **Fix:** Enter Whisper — the AI transcription wizard.
@@ -28,7 +28,7 @@ So I spun up my trusty **GCP Ubuntu server**, gave it coffee, and put it to work
 
 - Installed Whisper and friends locally.
 - Hit the **SHA256 mismatch** error — fixed it by deleting `.cache/whisper`.
-- Discovered `medium` model needs ~5GB VRAM — and I had only 4GB 😩
+- Found out the `medium` model needs ~5GB VRAM — but I had only 4GB 😩
 - Dropped to the `base` model — still solid.
 - Whisper worked its magic and gave me `.srt` files like a charm.
 
@@ -36,69 +36,100 @@ So I spun up my trusty **GCP Ubuntu server**, gave it coffee, and put it to work
 
 #### ☁️ Episode 3: Moving to the Cloud
 
-- Gave GCP a mission: be my subtitle factory, let Google handle the downloading and transcription.
-- Installed all tools: `yt-dlp`, `ffmpeg`, `whisper`
-- Built out the folders:
-  - `tools/audio/` → temp audio (deleted after use)
-  - `tools/subtitles/` → all `.srt` gold
+- Gave GCP a mission: be my subtitle factory.
+- Installed tools: `yt-dlp`, `ffmpeg`, `whisper`, `rclone`
+- Built out folders:
+  - `tools/audio/` → temp audio files (auto-deleted)
+  - `tools/subtitles/` → goldmine of `.srt`
   - `tools/youtube_links.txt` → the hit list
 
-- Crafted `auto_transcribe_and_sync.py`:
-  - Reads the URL list
-  - Downloads the audio
-  - Transcribes it via Whisper
-  - Deletes the audio (save space because its only 50GB of space)
-  - Syncs `.srt` to Google Drive via `rclone`
+- Crafted `auto_transcribe_and_sync.py` to:
+  - Read the URL list
+  - Download audio
+  - Transcribe with Whisper
+  - Delete audio to save space (50GB limit!)
+  - Sync `.srt` to Google Drive using `rclone`
 
 ---
 
-#### 🧠 Tweaks I Made
+#### 🧠 Smart Tweaks
 
-- `processed_links.log`: So I don’t do double work
-- `failed_links.log`: For links that didn’t make the cut
-- `rclone`: Pushes just the `.srt` to Drive — lightweight, cheap, clean
-- Cron-friendly: The script can run itself while I sleep (or you can use tmux)
-- Live transcription logging with `tail -f transcription.log` in tmux
+- `processed_links.log`: to prevent reprocessing
+- `failed_links.log`: to retry later
+- `rclone`: uploads only `.srt` → cheap & effective
+- Cron-ready: fully automatable with `tmux`
+- Added live logging: `tail -f transcription.log` while Whisper runs
 
 ---
 
-#### 🧱 Things That Tripped Me Up
+#### 🧱 Gotchas & Glitches
 
-- Whisper model downloads going corrupt mid-way
-- Weird characters (like `｜｜`) breaking `ffmpeg`
-- Videos without captions or auto-captions
-- My GPU saying "nope, too heavy for me"
-- Whisper on CPU? Let’s just say it makes my grandma look fast
+- Whisper downloads corrupted mid-way (cache issue)
+- Video titles with symbols like `｜｜` broke `ffmpeg`
+- Some videos just don’t have captions
+- Whisper on CPU is **painfully slow** — 30-min video = ~2 hours
+- My poor GPU couldn’t keep up — Whisper said “nah bro”
+
+---
+
+#### 📦 Microservices & Docker Move
+
+- Split the pipeline into microservices:
+  - `transcriber` → Whisper engine
+  - `cleaner` → `.srt` to raw text
+  - `embedder` → prepare for vector DB
+  - `vector_search` → FAISS or Pinecone wrapper
+  - `llm_inference` → handle OpenAI or fine-tuned answers
+  - `metadata` → title, tags, URL annotation
+- Created `docker-compose.yml` to run all services locally
+- Created a plan for future autoscaling + GCP deployment
 
 ---
 
 #### ⚠️ Bonus Lessons
 
-- Whisper will warn about `FP16 not supported on CPU` — harmless, expected.
-- CPU-only Whisper transcription of a 30-minute audio can take 2+ hours.
-- You can monitor resource usage with `top`, `ps aux`, or `stat` while in tmux.
+- Whisper will warn: `FP16 not supported on CPU` — ignore it.
+- Use `top` or `ps aux` to check CPU/RAM usage in tmux.
+- Use `stat` or `ls -lh` to monitor file size growth.
+- Delete audio ASAP — `.mp3` files eat disk fast.
 
+---
 
 #### 🚧 Next on the Roadmap
 
-- Write `retry_failed.py` to give failed URLs a second chance
-- Auto-log metadata (video title, duration, model used)
-- Whisper + translation mode (multilingual → English subs)
-- Dockerize everything (why not?)
-- Build cleaner: `clean_srt_to_text.py` to turn .srt into raw NLP-friendly text
-- Move to a different VPS because GCP billing by the hour makes no sense for this pet project
+- [ ] `retry_failed.py`: Auto-retry links that failed
+- [ ] Add metadata extractor to auto-log title, duration, model
+- [ ] Translation mode: non-English to English via Whisper
+- [ ] Polish `clean_srt_to_text.py` for better chunking & cleaning
+- [ ] Build `.jsonl` chunker → ready for embedding
+- [ ] Create Dockerfiles for each microservice
+- [ ] Explore Pinecone vs FAISS for vector DB
+- [ ] Add a FastAPI query endpoint for the frontend
+- [ ] Move away from GCP billing (hourly charges stack up!)
+
 ---
 
 ### 📜 Changelog
 
+#### v0.4.0 - May 1, 2025
+- Added Docker Compose setup for microservices
+- Microservices now include transcriber, cleaner, embedder, vector search, inference, metadata
+
+#### v0.3.0 - May 1, 2025
+- Token-aware chunking, embedding cost estimator
+- Exported `ready_for_embedding.jsonl`
+
+#### v0.2.0 - May 1, 2025
+- Added metadata extraction and merging with `.txt`
+- Cleaned `.srt` to raw text format
+
 #### v0.1.1 - May 1, 2025
-- Added live logging to `transcribe_audio()` using `subprocess.Popen`
-- Now writes Whisper output to `transcription.log`
-- Supports `tail -f` in tmux for real-time tracking
+- Added live logging to Whisper transcription
+- Created `transcription.log` for tmux + `tail -f`
 
 #### v0.1.0 - April 30, 2025
-- First working version of the YouTube-to-Subtitle engine
-- Added: `youtubeScraper.py`, `whisperBatch.py`, `auto_transcribe_and_sync.py`
-- Integrated Whisper + yt-dlp + rclone
-- Cleaned up audio files after use
-- Added tracking with `processed_links.log` and `failed_links.log`
+- First working version of the YouTube-to-Subtitle pipeline
+- `youtubeScraper.py`, `whisperBatch.py`, `auto_transcribe_and_sync.py`
+- Whisper + yt-dlp + rclone fully integrated
+- Audio files cleaned post-transcription
+- Logs added for processed and failed links
