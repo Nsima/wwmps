@@ -2,10 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { Send, Settings, ChevronDown, X } from 'lucide-react';
 
 const pastors = [
-  { id: 1, name: "Bishop David Oyedepo", era: "The Living Faith Church Worldwide", avatar: "/api/placeholder/40/40" },
-  { id: 2, name: "Pastor Enoch Adeboye", era: "The Redeem Christian Church of God", avatar: "/api/placeholder/40/40" },
-  { id: 3, name: "Pastor Paul Adefarasin", era: "The House on the Rock", avatar: "/api/placeholder/40/40" },
-  { id: 4, name: "Pastor David Ibiyeomie", era: "Salvation Ministries", avatar: "/api/placeholder/40/40" },
+  { id: 1, name: "Bishop David Oyedepo", era: "The Living Faith Church Worldwide", avatar: "/avatars/oyedepo.jpg" },
+  { id: 2, name: "Pastor Enoch Adeboye", era: "The Redeem Christian Church of God", avatar: "/avatars/adeboye.jpg" },
+  { id: 3, name: "Pastor Paul Adefarasin", era: "The House on the Rock", avatar: "/avatars/adefarasin.jpg" },
+  { id: 4, name: "Pastor David Ibiyeomie", era: "Salvation Ministries", avatar: "/avatars/ibiyeomie.jpg" },
 ];
 
 export default function Chatbot() {
