@@ -1,6 +1,6 @@
 'use client';
-import PastorChatbot from '@/components/Chatbot';
+import Chatbot from '@/components/Chatbot';
 
 export default function Page() {
-  return <PastorChatbot />;
+  return <Chatbot />;
 }
