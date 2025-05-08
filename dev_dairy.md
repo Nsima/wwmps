@@ -69,10 +69,26 @@ User can now focus on the conversation and reveal past chats on demand.
 
 ---
 
+## 🧠 Day 7: Embedding Pipeline + FAISS + PostgreSQL Setup
+Shifted from frontend to serious AI backend engineering:
+
+- Created individual `.jsonl` files per pastor with sermon chunks
+- Built a `services/embedder/` folder with:
+  - `embed_faiss.py`: Embeds chunks using `text-embedding-ada-002`
+  - `db.py`: Stores metadata to PostgreSQL (`embeddings_metadata`)
+  - `config.py`: Loads OpenAI + DB credentials from `.env`
+- Set up `.env` for OpenAI key + DB connection
+- Generated separate FAISS index files per pastor (e.g., `index_oyedepo.faiss`)
+- Modified pipeline to gracefully handle rate limits, SSL issues, and log skipped chunks
+
+**Bonus:** Debugged OpenAI SSL issues on Windows + fixed SDK breaking changes by upgrading to the `openai>=1.0.0` client syntax.
+
+---
+
 ## 🧼 Notes + Next Steps
-- Still using placeholder responses — need to hook up backend LLM
-- Need persistence for chat sessions (localStorage? DB?)
-- Possible future: avatars, typing indicator, share/save reflection
+- Need to build FAISS search + chunk retrieval logic
+- Hook retrieval into GPT backend to form actual answers
+- Add API layer with Node.js backend to connect frontend ↔ vector DB
 
 Stay tuned — this app is turning sermons into divine UI.
 
