@@ -28,3 +28,8 @@
    ```bash
    git clone https://github.com/nsima/wwmps.git
    cd wwmps
+
+### 📔 Peek Behind the Code
+
+> Curious about the late nights, divine debugging, and holy breakthroughs?  
+> 🙏 Check out the [**Dev Diary**](./dev_dairy.md) to follow the entire build journey, miracle by miracle.
