@@ -81,6 +81,11 @@ Started building a subtitle extraction pipeline for sermon videos:
 - Output is `.jsonl`, ready for embedding
 - Fully automated — 2 scripts, full pipeline
 
+### Episode 5: Dual Input Optimization
+- Added support for both **YouTube video links** and **already-downloaded audio files**
+- CLI option allows running with `--mode youtube`, `--mode local`, or `--mode both`
+- Prevents re-processing already handled files with smart logging
+
 ---
 
 ## 🧠 Day 8: Embedding Pipeline + FAISS + PostgreSQL Setup
@@ -107,6 +112,10 @@ Started building a subtitle extraction pipeline for sermon videos:
 ---
 
 ## 📜 Changelog Highlights
+
+### v0.3.0 - May 4, 2025
+- Added dual-input pipeline mode (YouTube + Local audio)
+- CLI options to control transcription source
 
 ### v0.2.0 - May 3, 2025
 - Docker Compose setup for all AI microservices
