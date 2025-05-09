@@ -113,9 +113,15 @@ Started building a subtitle extraction pipeline for sermon videos:
 
 ## 📜 Changelog Highlights
 
-### v0.3.0 - May 4, 2025
+### v0.3.0 - May 8, 2025
 - Added dual-input pipeline mode (YouTube + Local audio)
 - CLI options to control transcription source
+    To process YouTube URLs only
+    - `python pipeline_transcribe.py --mode youtube`
+    Process local audio files only
+    - `python pipeline_transcribe.py --mode local`
+    Process both (default behavior)
+    - `python pipeline_transcribe.py`
 
 ### v0.2.0 - May 3, 2025
 - Docker Compose setup for all AI microservices
