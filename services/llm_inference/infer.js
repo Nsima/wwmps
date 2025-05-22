@@ -10,7 +10,7 @@ const infer = async (messages) => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "llama3",
+        model: "mannix/llama3.1-8b-abliterated",
         messages,
       }),
     });

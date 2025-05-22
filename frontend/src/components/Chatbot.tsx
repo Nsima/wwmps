@@ -19,34 +19,49 @@ export default function Chatbot() {
   const [typingMessage, setTypingMessage] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
-
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, typingMessage]);
+
+  const fetchAnswerFromBackend = async (question: string, pastor: string) => {
+    try {
+      const res = await fetch('/api/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, pastor })
+      });
+      const data = await res.json();
+      return data.answer;
+    } catch (err) {
+      console.error('Error fetching from backend:', err);
+      return "Sorry, I couldn't fetch a response. Please try again.";
+    }
+  };
 
   const handleSendMessage = () => {
     if (!input.trim()) return;
 
     const userMessage = { id: messages.length + 1, text: input, isUser: true };
     setMessages(prev => [...prev, userMessage]);
-    const fullResponse = `As ${selectedPastor.name}, I would respond to your question with spiritual wisdom and guidance...`;
     setInput("");
     setTypingMessage("");
     setIsTyping(true);
 
-    const words = fullResponse.split(" ");
-    let index = 0;
+    fetchAnswerFromBackend(input, selectedPastor.name).then((fullResponse) => {
+      const words = fullResponse.split(" ");
+      let index = 0;
 
-    const interval = setInterval(() => {
-      setTypingMessage((prev) => prev + (index > 0 ? " " : "") + words[index]);
-      index++;
-      if (index === words.length) {
-        clearInterval(interval);
-        setMessages(prev => [...prev, { id: prev.length + 1, text: fullResponse, isUser: false }]);
-        setIsTyping(false);
-        setTypingMessage("");
-      }
-    }, 150);
+      const interval = setInterval(() => {
+        setTypingMessage((prev) => prev + (index > 0 ? " " : "") + words[index]);
+        index++;
+        if (index === words.length) {
+          clearInterval(interval);
+          setMessages(prev => [...prev, { id: prev.length + 1, text: fullResponse, isUser: false }]);
+          setIsTyping(false);
+          setTypingMessage("");
+        }
+      }, 150);
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
