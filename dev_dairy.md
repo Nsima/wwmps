@@ -1,153 +1,159 @@
 # 🛠️ Dev Diary — What Would My Pastor Say (WWMPS)
 
-Welcome to my little back-end-of-the-frontend (and now back-end-of-the-backend) brain dump! This is where I’m keeping track of everything I’ve built, broken, re-built, and duct-taped together for this AI-powered chatbot.
+Welcome to the (barely controlled) chaos that is building a full-stack AI chatbot fueled by Nigerian sermons. This is where I track what I’ve built, broken, revived, refactored, duct-taped, and pretended I understood the first time. All in the name of asking: *“What would Pastor Oyedepo say about... anything?”*
 
-## Caveat: I'm not the best at UI, but I'm not afraid to build a distributed sermon-processing pipeline either.
----
-
-## 📅 Day 1: The Vision
-Started with a simple idea: *"What would Pastor Oyedepo say if someone asked him this?"* That’s it. The goal? Let users ask questions and receive AI-generated reflections grounded in sermons and teachings from Nigerian pastors.
-
-- Chose the stack: **Next.js + Tailwind + Node.js (Backend later) + OpenAI**
-- Folder structure defined with `frontend/`, `backend/`, `services/`
-- Built the initial `page.tsx` layout
+## ⚠️ Disclaimer: I might not be a UI genius, but I will absolutely build an offline vector search engine from scratch if you tempt me.
 
 ---
 
-## 💻 Day 2: UI Mock + Component Shells
-The wireframe design came to life:
-- Header: `What would [Pastor X] say?`
-- Model Selector Dropdown
-- Text input box for user questions
-- Output box for AI response (spiritual reflections)
-- Added Submit button (yes, chatbot, not magic)
+## 📅 Day 1: The “Aha” Moment
+So it began...
+> "What would Pastor Oyedepo say if someone asked him about forgiveness?"
 
-Modularized into:
+Boom — that was the spark. Goal: AI-generated spiritual responses trained on sermons. Tech stack? Let’s get nerdy:
+- **Next.js + Tailwind (frontend)**
+- **Node.js API (RAG backend)**
+- **PostgreSQL + FAISS**
+- **Eventually ditch OpenAI and go full local with Ollama**
+
+Initial folder structure built, `page.tsx` was born. The prophecy began.
+
+---
+
+## 💻 Day 2: Mockups & Pastor Personalities
+- Created header: *What Would [Pastor] Say?*
+- Added dropdown menu to pick your preacher
+- Prompt input + response area
+- Basically a holy Ask Jeeves.
+
+Modularized into components (because real devs break it into components before they break down mentally):
 - `ModelSelector.tsx`
 - `QuestionInput.tsx`
 - `ReflectionOutput.tsx`
 
 ---
 
-## 🧪 Day 3: Chatbot Mode Activated
-Shifted from a single response to full-on **chat mode**:
-- Messages stack like a chat thread
-- User on the right, Pastor on the left
-- Added message list state + AI placeholder response
+## 💬 Day 3: Chat Mode Unlocked
+- Replaced single output with threaded messages
+- User messages on right, AI on left
+- Added typing state
+- Pastors respond like they’re in a WhatsApp group chat.
 
 ---
 
-## 🔄 Day 4: Dynamic Header
-Made the header feel more human:
-> "What would Pastor Oyedepo say?"
+## 🪄 Day 4: Dynamic Headers
+- When you switch pastors, the header updates like:
+> “What would Pastor Adeboye say?”
 
-Changed automatically when a different pastor is selected.
-
----
-
-## 📱 Day 5: Mobile First (Fix the Input!)
-On mobile, the input was misbehaving — off-screen, blocked by keyboard.
-- Applied `sticky bottom-0` to input container
-- Used `100dvh` for better viewport handling
+Small change. Big vibe.
 
 ---
 
-## 🧩 Day 6: Sidebar + Conversation Toggle
-- Sidebar now toggleable (slide-in/out)
-- Cleaned up the chat focus experience
+## 📱 Day 5: Mobile UI Madness
+Turns out phones are small. Who knew?
+- Fixed the input from jumping around
+- Applied sticky `bottom-0`
+- Adjusted viewport units with `100dvh`
+
+Now it’s usable in church without crying.
 
 ---
 
-## 📓 Day 7: Subtitle Scraper Saga 🍿  
-**Date:** April 30 – May 3, 2025  
-Started building a subtitle extraction pipeline for sermon videos:
-
-### Episode 1: The Sub-Ripper Awakens
-- Used `yt-dlp` + `youtubeScraper.py` to download `.srt`
-- Fallback to Whisper when no captions found
-
-### Episode 2: Whisper to the Rescue
-- Installed Whisper locally (base model)
-- SHA256 cache error fixed
-- Whisper now auto-generates `.srt` from audio
-
-### Episode 3: Moving to the Cloud
-- Moved pipeline to GCP (Whisper + yt-dlp + ffmpeg + rclone)
-- Auto-transcribes and syncs `.srt` to Drive
-- Created `pipeline_transcribe.py` to streamline the job
-
-### Episode 4: Pipeline Consolidation
-- Merged cleaning + metadata + chunking into `pipeline_prepare_for_embedding.py`
-- Output is `.jsonl`, ready for embedding
-- Fully automated — 2 scripts, full pipeline
-
-### Episode 5: Dual Input Optimization
-- Added support for both **YouTube video links** and **already-downloaded audio files**
-- CLI option allows running with `--mode youtube`, `--mode local`, or `--mode both`
-- Prevents re-processing already handled files with smart logging
+## 🧩 Day 6: Sidebar Shenanigans
+- Sidebar toggle for picking pastors mid-convo
+- Sleek transitions, fewer distractions
+- Much chat, very Spirit.
 
 ---
 
-## 🧠 Day 8: Embedding Pipeline + FAISS + PostgreSQL Setup
-- Created `.jsonl` files per pastor
-- Integrated InstructorEmbedding (offline) for generating local semantic vectors
-- Used `embed_with_instructor.py` to:
-  - Extract `pastor_name` from `.jsonl`
-  - Embed chunks locally with `hkunlp/instructor-xl`
-  - Save vectors to FAISS
-  - Save metadata to Postgres
-- Set up FastAPI semantic search microservice for querying FAISS
-- Added `searchService.js` to connect Node backend to FAISS + Postgres
-- All completely offline, no OpenAI required
+## 🎥 Day 7: The Subtitle Extraction Saga 🍿
+**April 30 – May 3, 2025**
+
+> Aka “The Week I Became a CLI Whisperer”
+
+**Episode I: The Sub-Ripper Awakens**
+- Used `yt-dlp` to grab `.srt` subtitle files
+- Whisper steps in when no captions found
+
+**Episode II: Whisper to the Rescue**
+- Installed locally (and lived to tell the tale)
+- Base model, fixed cache errors
+
+**Episode III: Cloud Ascension**
+- GCP deployment
+- FFmpeg + rclone + cron magic
+- `.srt` gets beamed to Google Drive like sermon scripture
+
+**Episode IV: Pipeline Penance**
+- Merged transcription → cleaning → chunking
+- Final output: `.jsonl` chunks ready for vectorization
+
+**Episode V: Dual Mode Domination**
+- CLI flags: `--mode youtube`, `--mode local`, or both
+- Smarter file checking = no re-processing
 
 ---
 
-## 🐳 Day 9: Microservices + Docker Compose
-- Split each step into Python microservices:
-  - `transcriber`, `cleaner`, `embedder`, `vector_search`, `inference`, `metadata`
-- Dockerized each service
-- `docker-compose.yml` launches entire pipeline stack locally
-- Future-proofed for CI/CD and autoscaling on GCP
+## 🧠 Day 8: Embedding Madness
+- Used `InstructorEmbedding` (offline, zero API vibes)
+- Embedded sermons chunk-by-chunk
+- Stored vectors in FAISS
+- Metadata went to PostgreSQL
+- Built FastAPI search microservice
+- Connected to Node.js via `searchService.js`
+
+This was the point I whispered to myself: *“It is done.”*
 
 ---
 
-## 📜 Changelog Highlights
+## 🤖 Day 9: RAG Life + Ollama Inference
+- Created `/api/query` endpoint in Node.js
+- Accepts user question + selected pastor
+- Retrieves semantically matched sermon chunks
+- Builds dynamic prompt → sends to Ollama (local LLaMA3)
+- Response gets streamed back to frontend
+- All of this? Offline. API-less. Fully local RAG.
 
-### v0.3.0 - May 8, 2025
-- Added dual-input pipeline mode (YouTube + Local audio)
-- CLI options to control transcription source
-    To process YouTube URLs only
-    - `python pipeline_transcribe.py --mode youtube`
-    Process local audio files only
-    - `python pipeline_transcribe.py --mode local`
-    Process both (default behavior)
-    - `python pipeline_transcribe.py`
-
-### v0.2.0 - May 3, 2025
-- Docker Compose setup for all AI microservices
-- Combined multiple tools into:
-  - `pipeline_transcribe.py`
-  - `pipeline_prepare_for_embedding.py`
-
-### v0.1.x - May 1–2, 2025
-- Token-aware chunking
-- Live Whisper transcription logs
-- `.srt` → `.txt` → `.jsonl` embedding-ready pipeline
+Frontend even shows a little *“Thinking...”* bubble now. ✨
 
 ---
 
-## 🧼 Notes + What’s Next
-- [x] Add FAISS search + semantic retrieval service
-- [x] Connect to LLaMA3.2 (via Ollama) for context-aware responses
-- [x] Build Node.js API gateway (RAG backend)
-- [x] Load `.jsonl` files per pastor, store `pastor_name` in DB
-- [x] Offline embedding with InstructorEmbedding
-- [ ] `retry_failed.py` for broken video links
-- [ ] Compare FAISS vs Pinecone in production
-- [ ] Implement translation support (non-English sermons)
-- [ ] Add feedback/rating system to chatbot
-- [ ] Clean Docker deployment for GCP billing efficiency
+## 🐳 Day 10: Containerize Everything
+- Broke down pipeline into Python microservices:
+  - `transcriber`, `cleaner`, `embedder`, `vector_search`, etc.
+- Dockerized the whole stack
+- `docker-compose up` = instant sermon AI factory
 
-—
+---
 
-— **Dev-in-faith** ✝️
+## 📜 Recent Changelog
+
+### v0.3.0 — May 8, 2025
+- Dual mode: YouTube & Local audio
+- CLI: `--mode youtube`, `--mode local`, `--mode both`
+
+### v0.2.0 — May 3, 2025
+- Docker Compose setup
+- Combined scripts into `pipeline_transcribe.py` + `prepare_for_embedding.py`
+
+### v0.1.x — May 1–2, 2025
+- Whisper transcription working locally
+- Chunking sermons into embeddable pieces
+- Clean `.jsonl` outputs for FAISS
+
+---
+
+## 🧼 What’s Next (May the Devs Be With Me)
+- [x] RAG backend: Node.js ↔️ FastAPI ↔️ FAISS
+- [x] Dynamic pastor responses
+- [x] Ollama local model inference (bye OpenAI 👋)
+- [x] Working chat UI with contextual memory
+- [ ] `retry_failed.py` for broken YouTube links
+- [ ] Structure re-organization and cleanup
+- [ ] Translation for non-English sermons
+- [ ] Add user feedback/rating system to improve responses
+- [ ] Streamline Docker for lean GCP deployment
+
+---
+
+👨🏽‍💻 Built by a Dev-in-Faith ✝️ — powered by caffeine, Gospel, and the fear of breaking production.
