@@ -90,15 +90,15 @@ Started building a subtitle extraction pipeline for sermon videos:
 
 ## 🧠 Day 8: Embedding Pipeline + FAISS + PostgreSQL Setup
 - Created `.jsonl` files per pastor
-- Built `embed_faiss.py` to:
-  - Use OpenAI `text-embedding-ada-002`
-  - Save vectors to individual FAISS index files
-- Stored metadata to PostgreSQL via `db.py`
-- Added `.env` for secure API and DB credentials
-- Gracefully handles:
-  - SSL issues on Windows
-  - OpenAI SDK migration (v1.x compatibility)
-  - Quota and rate limit errors
+- Integrated InstructorEmbedding (offline) for generating local semantic vectors
+- Used `embed_with_instructor.py` to:
+  - Extract `pastor_name` from `.jsonl`
+  - Embed chunks locally with `hkunlp/instructor-xl`
+  - Save vectors to FAISS
+  - Save metadata to Postgres
+- Set up FastAPI semantic search microservice for querying FAISS
+- Added `searchService.js` to connect Node backend to FAISS + Postgres
+- All completely offline, no OpenAI required
 
 ---
 
@@ -137,9 +137,11 @@ Started building a subtitle extraction pipeline for sermon videos:
 ---
 
 ## 🧼 Notes + What’s Next
-- [ ] Add FAISS search + semantic retrieval service
-- [ ] Connect to GPT for context-aware responses
-- [ ] Build Node.js API gateway (RAG backend)
+- [x] Add FAISS search + semantic retrieval service
+- [x] Connect to LLaMA3.2 (via Ollama) for context-aware responses
+- [x] Build Node.js API gateway (RAG backend)
+- [x] Load `.jsonl` files per pastor, store `pastor_name` in DB
+- [x] Offline embedding with InstructorEmbedding
 - [ ] `retry_failed.py` for broken video links
 - [ ] Compare FAISS vs Pinecone in production
 - [ ] Implement translation support (non-English sermons)

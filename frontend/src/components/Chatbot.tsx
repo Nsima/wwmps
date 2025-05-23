@@ -25,7 +25,7 @@ export default function Chatbot() {
 
   const fetchAnswerFromBackend = async (question: string, pastor: string) => {
     try {
-      const res = await fetch('/api/query', {
+      const res = await fetch('http://localhost:3000/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question, pastor })
@@ -47,8 +47,20 @@ export default function Chatbot() {
     setTypingMessage("");
     setIsTyping(true);
 
+    // Show waiting message first
+    let dotCount = 0;
+    const waitingInterval = setInterval(() => {
+      dotCount = (dotCount + 1) % 4;
+      const dots = '.'.repeat(dotCount);
+      setTypingMessage(`Thinking${dots}`);
+    }, 500);
+
     fetchAnswerFromBackend(input, selectedPastor.name).then((fullResponse) => {
-      const words = fullResponse.split(" ");
+      clearInterval(waitingInterval);
+      setTypingMessage("");
+
+      const safeResponse = fullResponse || "Sorry, no response was returned.";
+      const words = safeResponse.split(" ");
       let index = 0;
 
       const interval = setInterval(() => {

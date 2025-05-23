@@ -7,7 +7,7 @@ async function getLLMResponseWithOllama(prompt) {
     stream: false,
   });
 
-  return response.data.response.trim();
+  return response.data.response.trim() || 'No response received.';
 }
 
 module.exports = { getLLMResponseWithOllama };
