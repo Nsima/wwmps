@@ -152,7 +152,7 @@ Frontend even shows a little *“Thinking...”* bubble now. ✨
 - [ ] Structure re-organization and cleanup
 - [ ] Translation for non-English sermons
 - [ ] Add user feedback/rating system to improve responses
-- [ ] Streamline Docker for lean GCP deployment
+- [ ] Message caching and storage
 
 ---
 
