@@ -149,7 +149,7 @@ Frontend even shows a little *“Thinking...”* bubble now. ✨
 - [x] Ollama local model inference (bye OpenAI 👋)
 - [x] Working chat UI with contextual memory
 - [ ] `retry_failed.py` for broken YouTube links
-- [ ] Structure re-organization and cleanup
+- [ ] Structure/Re-organization and cleanup
 - [ ] Translation for non-English sermons
 - [ ] Add user feedback/rating system to improve responses
 - [ ] Message caching and storage
