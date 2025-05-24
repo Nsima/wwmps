@@ -2,7 +2,7 @@
 echo Starting WWMPS Chatbot System...
 
 REM Start Backend API
-start "Backend API" cmd /k "cd backend && node index.js"
+start "Backend API" cmd /k "cd backend && node --max-old-space-size=4096 index.js"
 
 REM Start Vector Search Microservice
 start "Vector Search" cmd /k "cd services\\vector_search && python search.py"

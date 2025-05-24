@@ -16,7 +16,7 @@ router.post('/', async (req, res) => {
     console.log("🔍 Performing semantic search...");
     const chunks = await semanticSearch(question);
     console.log("✅ Got chunks:", chunks.length);
-    const context = chunks.join('\n\n');
+    const context = chunks.join('\n\n').slice(0, 3000); // Limit to 3KB of context
 
     // Build prompt
     const prompt = `

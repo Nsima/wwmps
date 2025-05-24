@@ -3,16 +3,18 @@ import uvicorn
 import json
 import faiss
 import numpy as np
+import os
 from InstructorEmbedding import INSTRUCTOR
 
 app = FastAPI()
 
 # Load embedding model and FAISS index
 model = INSTRUCTOR("hkunlp/instructor-base")
-index = faiss.read_index("tools/sermons.faiss")
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+index = faiss.read_index(os.path.join(BASE_DIR, "tools", "sermons.faiss"))
 
 # Load chunk_id mapping
-with open("tools/id_mapping.json", "r") as f:
+with open(os.path.join(BASE_DIR, "tools", "id_mapping.json"), "r") as f:
     id_mapping = json.load(f)
 
 @app.post("/search")
