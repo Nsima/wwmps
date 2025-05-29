@@ -8,7 +8,7 @@ Welcome to the (barely controlled) chaos that is building a full-stack AI chatbo
 
 ## 📅 Day 1: The “Aha” Moment
 So it began...
-> "What would Pastor Oyedepo say if someone asked him about forgiveness?"
+> "What would Pastor Adefarasin say if someone asked him about the current state of Nigeria?"
 
 Boom — that was the spark. Goal: AI-generated spiritual responses trained on sermons. Tech stack? Let’s get nerdy:
 - **Next.js + Tailwind (frontend)**
