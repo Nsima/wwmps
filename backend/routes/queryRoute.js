@@ -1,7 +1,7 @@
 // backend/routes/queryRoute.js
 const express = require('express');
 const router = express.Router();
-const { getLLMResponseWithOllama } = require('../services/llmService');
+const { getLLMResponse } = require('../services/llmService');
 const { semanticSearch } = require('../services/searchService');
 
 router.post('/', async (req, res) => {
@@ -32,7 +32,7 @@ Respond as ${pastor} would:
 `;
     console.log("🧠 Sending prompt to Ollama...");
     // Get LLM response from Ollama
-    const answer = await getLLMResponseWithOllama(prompt);
+    const answer = await getLLMResponse(prompt);
     res.json({ answer });
   } catch (err) {
     console.error('Query processing error:', err);

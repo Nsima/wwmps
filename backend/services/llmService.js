@@ -1,13 +1,45 @@
 const axios = require('axios');
+require('dotenv').config(); // Ensure .env is loaded
 
-async function getLLMResponseWithOllama(prompt) {
-  const response = await axios.post('http://localhost:11434/api/generate', {
-    model: 'mannix/llama3.1-8b-abliterated', // or your custom model
-    prompt,
-    stream: false,
-  });
+const useOpenAI = process.env.USE_OPENAI === 'true';
 
-  return response.data.response.trim() || 'No response received.';
+async function getLLMResponse(prompt) {
+  if (useOpenAI) {
+    console.log('🔁 Using OpenAI API...');
+    const apiKey = process.env.OPENAI_API_KEY;
+
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are Bishop David Oyedepo, a respected spiritual leader. Respond to the user as he would.'
+          },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`
+        }
+      }
+    );
+
+    return response.data.choices[0].message.content.trim();
+  } else {
+    console.log('🔁 Using Ollama Local Model...');
+    const response = await axios.post('http://localhost:11434/api/generate', {
+      model: 'mistral', // or 'llama3' if you're switching back
+      prompt,
+      stream: false
+    });
+
+    return response.data.response?.trim() || '⚠️ No response received from local model.';
+  }
 }
 
-module.exports = { getLLMResponseWithOllama };
+module.exports = { getLLMResponse };
