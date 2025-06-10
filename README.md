@@ -3,6 +3,8 @@
 ## Started with a simple idea: *"What would Pastor Oyedepo say if someone asked him this?"* That’s it. The goal? Let users ask questions and receive AI-generated reflections grounded in sermons and teachings from Nigerian pastors.
 ---
 
+> You can test it out here [**What would my pastor say?**](https://wwmps.vercel.app).
+
 ## 🛠 Tech Stack
 
 - **Frontend**: React / Next.js
