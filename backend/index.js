@@ -14,6 +14,6 @@ app.use(bodyParser.json());
 // Route to handle AI question answering
 app.use('/api/query', queryRoute);
 
-app.listen(PORT, () => {
-  console.log(`🚀 Node.js API running at http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Node.js API running at http://0.0.0.0:${PORT}`);
 });
