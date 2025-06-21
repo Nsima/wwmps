@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Settings, ChevronDown, X } from 'lucide-react';
+import { Analytics } from "@vercel/analytics/next";
 
 const pastors = [
   { id: 1, name: "Bishop David Oyedepo", era: "The Living Faith Church Worldwide", avatar: "/avatars/oyedepo.jpg" },
@@ -83,7 +84,7 @@ export default function Chatbot() {
       handleSendMessage();
     }
   };
-
+  <Analytics />
   return (
     <div className="flex flex-col h-screen bg-gray-50">
       <header className="bg-indigo-700 text-white p-4 shadow-md">
