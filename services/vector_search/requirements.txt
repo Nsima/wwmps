@@ -1,5 +1,6 @@
 fastapi
 uvicorn
+InstructorEmbedding
 faiss-cpu
 numpy
-InstructorEmbedding
+torch
