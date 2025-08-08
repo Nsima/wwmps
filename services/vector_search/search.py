@@ -4,7 +4,8 @@ import json
 import faiss
 import numpy as np
 import os
-from InstructorEmbedding import INSTRUCTOR
+#from InstructorEmbedding import INSTRUCTOR
+from sentence_transformers import SentenceTransformer
 
 app = FastAPI()
 
@@ -13,7 +14,8 @@ async def ping():
     return {"status": "Model is live!"}
 
 # Load embedding model and FAISS index
-model = INSTRUCTOR("hkunlp/instructor-base")  # You can switch to "instructor-small"
+#model = INSTRUCTOR("hkunlp/instructor-base")  # You can switch to "instructor-small"
+model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 index = faiss.read_index(os.path.join(BASE_DIR, "tools", "sermons.faiss"))
 
@@ -31,8 +33,8 @@ async def search(request: Request):
         return {"error": "Missing 'query' in request body"}
 
     # Embed the query with instruction
-    instruction = "Represent the meaning of this sentence for semantic search"
-    vector = model.encode([[instruction, query]])
+    #instruction = "Represent the meaning of this sentence for semantic search"
+    vector = model.encode([query])
     vector = np.array(vector).astype("float32")
 
     # Search in FAISS
