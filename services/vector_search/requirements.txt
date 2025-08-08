@@ -1,6 +1,6 @@
-fastapi
-uvicorn
-InstructorEmbedding
-faiss-cpu
-numpy
-torch
+fastapi==0.110.1
+uvicorn==0.29.0
+InstructorEmbedding==1.0.1
+faiss-cpu==1.7.4
+numpy==1.24.4
+torch==2.2.2
