@@ -13,7 +13,7 @@ async def ping():
     return {"status": "Model is live!"}
 
 # Load embedding model and FAISS index
-model = INSTRUCTOR("hkunlp/instructor-small")  # You can switch to "instructor-small"
+model = INSTRUCTOR("hkunlp/instructor-base")  # You can switch to "instructor-small"
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 index = faiss.read_index(os.path.join(BASE_DIR, "tools", "sermons.faiss"))
 
