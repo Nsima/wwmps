@@ -8,3 +8,4 @@ tqdm==4.66.4
 sentence-transformers==2.2.2
 transformers==4.39.3
 safetensors==0.4.2
+huggingface_hub==0.14.1
