@@ -1,0 +1,8 @@
+services:
+  - type: web
+    name: vector-search-api
+    env: python
+    plan: free
+    rootDir: services/vector_search
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn search:app --host 0.0.0.0 --port 10000
