@@ -1,11 +1,13 @@
+// src/components/Chatbox.tsx
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import Image from "next/image";
 import { Send, Settings, ChevronDown, X, Search } from "lucide-react";
 import { Analytics } from "@vercel/analytics/next";
 
 type Pastor = {
   id: number;
-  slug: string;      // e.g. "adeboye"
-  name: string;      // display name
+  slug: string; // e.g. "adeboye"
+  name: string; // display name
   era?: string;
   avatar?: string;
 };
@@ -16,6 +18,8 @@ type Msg = {
   isUser: boolean;
   pastorName?: string; // lock the bot bubble’s label at send time
 };
+
+type BackendResponse = { answer?: string };
 
 // Fallback list if fetch fails
 const FALLBACK_PASTORS: Pastor[] = [
@@ -28,17 +32,26 @@ const FALLBACK_PASTORS: Pastor[] = [
 const PASTORS_URL = process.env.NEXT_PUBLIC_PASTORS_URL || "/tools/pastors.json";
 
 // Normalize various shapes: {pastors:[...]} OR [...]
-function normalizePastors(payload: any): Pastor[] {
-  const arr = Array.isArray(payload) ? payload : Array.isArray(payload?.pastors) ? payload.pastors : [];
-  return arr
-    .map((p: any, i: number) => ({
-      id: Number.isFinite(p?.id) ? p.id : i + 1,
-      slug: String(p?.slug || "").toLowerCase(),
-      name: String(p?.name || ""),
-      era: p?.era || "",
-      avatar: p?.avatar || "/avatars/placeholder.jpg",
-    }))
-    .filter((p: Pastor) => p.slug && p.name);
+function normalizePastors(payload: unknown): Pastor[] {
+  const maybeArray =
+    Array.isArray(payload)
+      ? payload
+      : (typeof payload === "object" && payload !== null && Array.isArray((payload as { pastors?: unknown }).pastors))
+      ? (payload as { pastors?: unknown }).pastors
+      : [];
+
+  return (maybeArray as unknown[])
+    .map((raw, i) => {
+      const p = (typeof raw === "object" && raw !== null) ? (raw as Record<string, unknown>) : {};
+      return {
+        id: Number.isFinite(p.id) ? (p.id as number) : i + 1,
+        slug: String((p.slug ?? "") as string).toLowerCase(),
+        name: String((p.name ?? "") as string),
+        era: typeof p.era === "string" ? p.era : "",
+        avatar: typeof p.avatar === "string" ? p.avatar : "/avatars/placeholder.jpg",
+      } satisfies Pastor;
+    })
+    .filter((p) => p.slug && p.name);
 }
 
 // accent-insensitive, case-insensitive normalize
@@ -58,14 +71,14 @@ export default function Chatbot() {
     },
   ]);
 
-  const [input, setInput] = useState("");
-  const [showPastorMenu, setShowPastorMenu] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [typingMessage, setTypingMessage] = useState("");
+  const [input, setInput] = useState<string>("");
+  const [showPastorMenu, setShowPastorMenu] = useState<boolean>(false);
+  const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [typingMessage, setTypingMessage] = useState<string>("");
 
   // live search state
-  const [pastorQuery, setPastorQuery] = useState("");
-  const [activeIdx, setActiveIdx] = useState(0);
+  const [pastorQuery, setPastorQuery] = useState<string>("");
+  const [activeIdx, setActiveIdx] = useState<number>(0);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -78,7 +91,7 @@ export default function Chatbot() {
       try {
         const res = await fetch(PASTORS_URL, { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
+        const data: unknown = await res.json();
         const list = normalizePastors(data);
         if (list.length) {
           setPastors(list);
@@ -86,8 +99,9 @@ export default function Chatbot() {
           // update greeting label to match first fetched pastor
           setMessages((prev) => prev.map((m, i) => (i === 0 ? { ...m, pastorName: list[0].name } : m)));
         }
-      } catch (e) {
-        console.warn("Using fallback pastors:", e);
+      } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : String(e);
+        console.warn("Using fallback pastors:", message);
       }
     })();
   }, []);
@@ -136,13 +150,14 @@ export default function Chatbot() {
         signal: controller.signal,
       });
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err?.error || `HTTP ${res.status}`);
+        const err = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+        throw new Error(typeof err.error === "string" ? err.error : `HTTP ${res.status}`);
       }
-      const data = await res.json();
-      return (data?.answer as string) || "Sorry, no response was returned.";
-    } catch (e: any) {
-      console.error("Error fetching from backend:", e?.message || e);
+      const data = (await res.json()) as BackendResponse;
+      return data.answer ?? "Sorry, no response was returned.";
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      console.error("Error fetching from backend:", message);
       return "Sorry, I couldn't fetch a response. Please try again.";
     } finally {
       clearTimeout(timeout);
@@ -222,10 +237,13 @@ export default function Chatbot() {
             aria-haspopup="listbox"
             aria-expanded={showPastorMenu}
           >
-            <img
+            <Image
               src={selectedPastor?.avatar || "/avatars/placeholder.jpg"}
               alt={selectedPastor?.name || "Pastor"}
+              width={40}
+              height={40}
               className="w-10 h-10 rounded-full border-2 border-white object-cover"
+              priority
             />
             <div>
               <div className="font-medium flex items-center">
@@ -306,9 +324,11 @@ export default function Chatbot() {
                         role="option"
                         aria-selected={isSelected}
                       >
-                        <img
+                        <Image
                           src={pastor.avatar || "/avatars/placeholder.jpg"}
                           alt={pastor.name}
+                          width={40}
+                          height={40}
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div>
@@ -362,7 +382,7 @@ export default function Chatbot() {
           <div className="flex items-end bg-white rounded-lg border border-gray-300 focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500">
             <textarea
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="Ask anything..."
               className="flex-1 p-3 bg-transparent focus:outline-none resize-none max-h-32"
