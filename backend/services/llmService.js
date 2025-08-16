@@ -1,45 +1,99 @@
-const axios = require('axios');
-require('dotenv').config(); // Ensure .env is loaded
+// services/llmService.js
+const axios = require("axios");
 
-const useOpenAI = process.env.USE_OPENAI === 'true';
+/**
+ * Self-hosted LLM generator for RAG.
+ * Select provider via env:
+ *   LLM_PROVIDER=ollama | llamacpp | vllm
+ *   LLM_MODEL=llama3.1:8b-instruct-q4_K_M (ollama)
+ *   OLLAMA_URL=http://127.0.0.1:11434
+ *   LLAMACPP_URL=http://127.0.0.1:8080
+ *   VLLM_BASE_URL=http://127.0.0.1:8000/v1   (OpenAI-compatible)
+ */
+const PROVIDER = (process.env.LLM_PROVIDER || "ollama").toLowerCase();
+const MODEL = process.env.LLM_MODEL || "llama3.1:8b-instruct-q4_K_M";
+const TIMEOUT = Number(process.env.LLM_TIMEOUT_MS || 60000);
 
-async function getLLMResponse(prompt) {
-  if (useOpenAI) {
-    console.log('🔁 Using OpenAI API...');
-    const apiKey = process.env.OPENAI_API_KEY;
-
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: 'gpt-4-turbo',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are Bishop David Oyedepo, a respected spiritual leader. Respond to the user as he would.'
-          },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${apiKey}`
-        }
-      }
-    );
-
-    return response.data.choices[0].message.content.trim();
-  } else {
-    console.log('🔁 Using Ollama Local Model...');
-    const response = await axios.post('http://localhost:11434/api/generate', {
-      model: 'mistral', // or 'llama3' if you're switching back
-      prompt,
-      stream: false
-    });
-
-    return response.data.response?.trim() || '⚠️ No response received from local model.';
-  }
+// Unified entry
+async function generateAnswer({ system, user, max_tokens = 512, temperature = 0.2 }) {
+  if (PROVIDER === "llamacpp") return genWithLlamaCpp({ system, user, max_tokens, temperature });
+  if (PROVIDER === "vllm") return genWithVLLM({ system, user, max_tokens, temperature });
+  return genWithOllama({ system, user, max_tokens, temperature }); // default
 }
 
-module.exports = { getLLMResponse };
+// ----- OLLAMA (chat) -----
+async function genWithOllama({ system, user, max_tokens, temperature }) {
+  const baseURL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
+  const { data } = await axios.post(
+    `${baseURL}/api/chat`,
+    {
+      model: MODEL,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      stream: false,
+      options: {
+        temperature,
+        num_predict: max_tokens,
+        // RAG-friendly decoding:
+        top_p: 0.9,
+        repeat_penalty: 1.05,
+        // If you enabled long context model:
+        // num_ctx: 32768,
+      },
+    },
+    { timeout: TIMEOUT }
+  );
+  return { text: data?.message?.content?.trim() || "" };
+}
+
+// ----- LLAMA.CPP server (OpenAI-ish / completions+chat bindings vary by build) -----
+async function genWithLlamaCpp({ system, user, max_tokens, temperature }) {
+  const baseURL = process.env.LLAMACPP_URL || "http://127.0.0.1:8080";
+  // Most llama.cpp servers expose a /v1/chat/completions endpoint now.
+  const { data } = await axios.post(
+    `${baseURL}/v1/chat/completions`,
+    {
+      model: MODEL,
+      messages: [
+        { role: "system", content: system },
+        { role: "user", content: user },
+      ],
+      temperature,
+      top_p: 0.9,
+      max_tokens,
+      // presence_penalty / frequency_penalty may or may not be supported depending on build
+    },
+    { timeout: TIMEOUT }
+  );
+  const text = data?.choices?.[0]?.message?.content?.trim() || "";
+  return { text };
+}
+
+// ----- vLLM (OpenAI-compatible) -----
+async function genWithVLLM({ system, user, max_tokens, temperature }) {
+  const baseURL = process.env.VLLM_BASE_URL || "http://127.0.0.1:8000/v1";
+  const api = axios.create({
+    baseURL,
+    timeout: TIMEOUT,
+    headers: { Authorization: `Bearer ${process.env.VLLM_API_KEY || "no-key"}` },
+  });
+
+  const model = MODEL || "meta-llama/Meta-Llama-3.1-8B-Instruct";
+  const { data } = await api.post("/chat/completions", {
+    model,
+    messages: [
+      { role: "system", content: system },
+      { role: "user", content: user },
+    ],
+    temperature,
+    top_p: 0.9,
+    max_tokens,
+  });
+
+  const text = data?.choices?.[0]?.message?.content?.trim() || "";
+  return { text };
+}
+
+module.exports = { generateAnswer };

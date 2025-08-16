@@ -48,10 +48,11 @@ build/
 *.log
 
 #Generated data
-/tools/audio/
-/tools/subtitles/
-/tools/clean_text/
+/tools
 
+#Python venv
+.venv/
+venv/
 
 jspm_packages/
 
@@ -150,4 +151,4 @@ dist
 
 #digi-ocean key
 digi-ocean
-digi-ocean.pub
+digi-ocean.pub.venv/

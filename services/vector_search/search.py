@@ -1,117 +1,106 @@
-# fastapi_app/main.py
-from fastapi import FastAPI, Request
-import uvicorn
+# search_service.py
+import os
 import json
 import faiss
 import numpy as np
-import os
+import psycopg2
+import psycopg2.extras
+from typing import Dict, Tuple, List
+from fastapi import FastAPI, HTTPException, Query
+from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer
-from typing import Dict, Any
 
-app = FastAPI()
+TOOLS_DIR = os.getenv("TOOLS_DIR", "tools")
+INDEX_DIR = os.path.join(TOOLS_DIR, "indexes")
+MAP_DIR   = os.path.join(TOOLS_DIR, "id_maps")
+METRIC    = os.getenv("FAISS_METRIC", "ip").lower()  # 'ip' or 'l2'
 
-@app.get("/ping")
-async def ping():
-    return {"status": "Model is live!"}
+DB_URL = os.getenv("DATABASE_URL")  # recommended
+if not DB_URL:
+    # fallback pieces (mirrors your loader defaults)
+    DB_URL = f"postgresql://{os.getenv('PGUSER','postgres')}:{os.getenv('PGPASSWORD','password')}@" \
+             f"{os.getenv('PGHOST','localhost')}:{os.getenv('PGPORT','5432')}/{os.getenv('PGDATABASE','Chatbot')}"
 
-# ---- Embedding model (one-time load)
-#model = INSTRUCTOR("hkunlp/instructor-base")  # You can switch to "instructor-small"
-#model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-model = SentenceTransformer("sentence-transformers/distiluse-base-multilingual-cased-v1")
+MODEL_NAME = os.getenv("EMBED_MODEL", "BAAI/bge-base-en-v1.5")
+BGE_QUERY_PREFIX = os.getenv("BGE_QUERY_PREFIX", "query: ")  # Safe default for BGE
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+app = FastAPI(title="WWMPS Search Service")
 
-# ---- Map index names to files (adjust paths to your repo layout)
-# e.g. tools/indexes/<slug>.faiss and tools/id_maps/<slug>.json
-INDEX_MAP: Dict[str, Dict[str, Any]] = {
-    "vectordb-oyedepo": {
-        "slug": "oyedepo",
-        "faiss_path": os.path.join(BASE_DIR, "tools", "indexes", "oyedepo.faiss"),
-        "map_path":  os.path.join(BASE_DIR, "tools", "id_maps", "oyedepo.json"),
-    },
-    "vectordb-adeboye": {
-        "slug": "adeboye",
-        "faiss_path": os.path.join(BASE_DIR, "tools", "indexes", "adeboye.faiss"),
-        "map_path":  os.path.join(BASE_DIR, "tools", "id_maps", "adeboye.json"),
-    },
-    "vectordb-adefarasin": {
-        "slug": "adefarasin",
-        "faiss_path": os.path.join(BASE_DIR, "tools", "indexes", "adefarasin.faiss"),
-        "map_path":  os.path.join(BASE_DIR, "tools", "id_maps", "adefarasin.json"),
-    },
-    "vectordb-ibiyeomie": {
-        "slug": "ibiyeomie",
-        "faiss_path": os.path.join(BASE_DIR, "tools", "indexes", "ibiyeomie.faiss"),
-        "map_path":  os.path.join(BASE_DIR, "tools", "id_maps", "ibiyeomie.json"),
-    },
-}
+_model = SentenceTransformer(MODEL_NAME)
+_index_cache: Dict[str, Tuple[faiss.Index, Dict[str, str]]] = {}  # pastor_slug -> (index, id_map)
 
-# ---- Lazy cache of loaded FAISS indexes + id mappings
-CACHE: Dict[str, Dict[str, Any]] = {}
+def load_index(pastor_slug: str) -> Tuple[faiss.Index, Dict[str, str]]:
+    if pastor_slug in _index_cache:
+        return _index_cache[pastor_slug]
+    idx_path = os.path.join(INDEX_DIR, f"{pastor_slug}.faiss")
+    map_path = os.path.join(MAP_DIR, f"{pastor_slug}.json")
+    if not os.path.exists(idx_path) or not os.path.exists(map_path):
+        raise FileNotFoundError(f"Missing index/map for pastor '{pastor_slug}'")
 
-def load_index_bundle(index_name: str) -> Dict[str, Any]:
-    if index_name in CACHE:
-        return CACHE[index_name]
-    cfg = INDEX_MAP.get(index_name)
-    if not cfg:
-        # Default (fallback) to Oyedepo if unknown index
-        cfg = INDEX_MAP["vectordb-oyedepo"]
-        index_name = "vectordb-oyedepo"
+    index = faiss.read_index(idx_path)
+    with open(map_path, "r", encoding="utf-8") as f:
+        id_map = json.load(f)
+        id_map = {str(k): v for k, v in id_map.items()} if isinstance(id_map, dict) else {str(i): v for i, v in enumerate(id_map)}
+    _index_cache[pastor_slug] = (index, id_map)
+    return index, id_map
 
-    faiss_index = faiss.read_index(cfg["faiss_path"])
-    with open(cfg["map_path"], "r", encoding="utf-8") as f:
-        id_mapping = json.load(f)
+def embed_query(q: str) -> np.ndarray:
+    text = f"{BGE_QUERY_PREFIX}{q}".strip()
+    vec = _model.encode([text], convert_to_numpy=True, normalize_embeddings=False).astype("float32")
+    if METRIC == "ip":
+        faiss.normalize_L2(vec)
+    return vec
 
-    bundle = {
-        "slug": cfg["slug"],
-        "index": faiss_index,
-        "id_mapping": id_mapping,
-    }
-    CACHE[index_name] = bundle
-    return bundle
+class SearchRequest(BaseModel):
+    query: str
+    pastor_slug: str
+    k: int = 8
 
-@app.post("/search")
-async def search(request: Request):
-    data = await request.json()
-    query = data.get("query")
-    top_k = int(data.get("top_k", 5))
-    index_name = data.get("index")  # e.g. "vectordb-oyedepo"
+@app.get("/health")
+def health():
+    return {"ok": True}
 
-    if not query:
-        return {"error": "Missing 'query' in request body"}
+@app.post("/query")
+def query(req: SearchRequest):
+    try:
+        index, id_map = load_index(req.pastor_slug)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
-    bundle = load_index_bundle(index_name or "vectordb-oyedepo")
-    faiss_index = bundle["index"]
-    id_mapping = bundle["id_mapping"]
-    pastor_slug = bundle["slug"]
+    qvec = embed_query(req.query)
+    D, I = index.search(qvec, req.k)
 
-    # Encode query
-    vec = model.encode([query])
-    vec = np.asarray(vec, dtype="float32")
+    # Map FAISS row ids -> chunk_ids
+    row_ids = [str(int(i)) for i in I[0] if int(i) >= 0]
+    if not row_ids:
+        return {"results": []}
 
-    # Search
-    # Pull a few extra in case some ids are missing from mapping for any reason
-    search_k = max(top_k, 10)
-    distances, indices = faiss_index.search(vec, search_k)
-    raw_ids = indices[0].tolist()
+    chunk_ids = [id_map[rid] for rid in row_ids]
 
-    # Map FAISS row ids -> external chunk_ids
-    chunk_ids = []
-    for i in raw_ids:
-        # guard against -1 (faiss can return -1 if not enough vectors)
-        if i == -1:
-            continue
-        mapped = id_mapping.get(str(i)) if isinstance(id_mapping, dict) else id_mapping[i]
-        if mapped:
-            chunk_ids.append(mapped)
-        if len(chunk_ids) >= top_k:
-            break
+    # Fetch rows in one round trip, keep score order
+    with psycopg2.connect(DB_URL) as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+            cur.execute("""
+                SELECT chunk_id, chunk, title, source_url, transcription_date, word_count, char_count, pastor_slug
+                FROM sermon_chunks
+                WHERE chunk_id = ANY(%s);
+            """, (chunk_ids,))
+            rows = {row["chunk_id"]: dict(row) for row in cur.fetchall()}
 
-    return {
-        "chunk_ids": chunk_ids,
-        "pastor_slug": pastor_slug,
-        "index": index_name or "vectordb-oyedepo",
-    }
+    # Build ordered results with scores (cosine/IP higher is better, L2 lower is better)
+    scored = []
+    for pos, rid in enumerate(row_ids):
+        cid = id_map[rid]
+        score = float(D[0][pos])
+        scored.append({
+            "chunk_id": cid,
+            "score": score,
+            **rows.get(cid, {"chunk": None, "title": None, "source_url": None, "transcription_date": None,
+                             "word_count": None, "char_count": None, "pastor_slug": req.pastor_slug})
+        })
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8001)
+    # If L2, sort ascending; if IP, sort descending (FAISS already returns ordered, but safe)
+    reverse = (METRIC == "ip")
+    scored.sort(key=lambda x: x["score"], reverse=reverse)
+
+    return {"metric": METRIC, "results": scored}

@@ -1,46 +1,114 @@
-import { useState, useRef, useEffect, useCallback } from "react";
-import { Send, Settings, ChevronDown, X } from "lucide-react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { Send, Settings, ChevronDown, X, Search } from "lucide-react";
 import { Analytics } from "@vercel/analytics/next";
 
 type Pastor = {
   id: number;
-  slug: "oyedepo" | "adeboye" | "adefarasin" | "ibiyeomie";
-  name: string;
-  era: string;
-  avatar: string;
+  slug: string;      // e.g. "adeboye"
+  name: string;      // display name
+  era?: string;
+  avatar?: string;
 };
 
 type Msg = {
   id: number;
   text: string;
   isUser: boolean;
-  pastorName?: string; // for bot messages
+  pastorName?: string; // lock the bot bubble’s label at send time
 };
 
-const pastors: Pastor[] = [
-  { id: 1, slug: "oyedepo", name: "Bishop David Oyedepo", era: "The Living Faith Church Worldwide", avatar: "/avatars/oyedepo.jpg" },
-  { id: 2, slug: "adeboye", name: "Pastor Enoch Adeboye", era: "The Redeem Christian Church of God", avatar: "/avatars/adeboye.jpg" },
+// Fallback list if fetch fails
+const FALLBACK_PASTORS: Pastor[] = [
+  { id: 1, slug: "oyedepo",    name: "Bishop David Oyedepo",   era: "The Living Faith Church Worldwide", avatar: "/avatars/oyedepo.jpg" },
+  { id: 2, slug: "adeboye",    name: "Pastor Enoch Adeboye",   era: "The Redeem Christian Church of God", avatar: "/avatars/adeboye.jpg" },
   { id: 3, slug: "adefarasin", name: "Pastor Paul Adefarasin", era: "The House on the Rock", avatar: "/avatars/adefarasin.jpg" },
-  { id: 4, slug: "ibiyeomie", name: "Pastor David Ibiyeomie", era: "Salvation Ministries", avatar: "/avatars/ibiyeomie.jpg" },
+  { id: 4, slug: "ibiyeomie",  name: "Pastor David Ibiyeomie", era: "Salvation Ministries", avatar: "/avatars/ibiyeomie.jpg" },
 ];
 
+const PASTORS_URL = process.env.NEXT_PUBLIC_PASTORS_URL || "/tools/pastors.json";
+
+// Normalize various shapes: {pastors:[...]} OR [...]
+function normalizePastors(payload: any): Pastor[] {
+  const arr = Array.isArray(payload) ? payload : Array.isArray(payload?.pastors) ? payload.pastors : [];
+  return arr
+    .map((p: any, i: number) => ({
+      id: Number.isFinite(p?.id) ? p.id : i + 1,
+      slug: String(p?.slug || "").toLowerCase(),
+      name: String(p?.name || ""),
+      era: p?.era || "",
+      avatar: p?.avatar || "/avatars/placeholder.jpg",
+    }))
+    .filter((p: Pastor) => p.slug && p.name);
+}
+
+// accent-insensitive, case-insensitive normalize
+const normalize = (s: string) =>
+  s?.normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase() ?? "";
+
 export default function Chatbot() {
+  const [pastors, setPastors] = useState<Pastor[]>(FALLBACK_PASTORS);
+  const [selectedPastor, setSelectedPastor] = useState<Pastor>(FALLBACK_PASTORS[0]);
+
   const [messages, setMessages] = useState<Msg[]>([
     {
       id: 1,
       text: "Hello! I'm here to provide spiritual guidance and answer questions as if I were a pastor. How can I help you today?",
       isUser: false,
-      pastorName: pastors[0].name,
+      pastorName: FALLBACK_PASTORS[0].name,
     },
   ]);
+
   const [input, setInput] = useState("");
-  const [selectedPastor, setSelectedPastor] = useState<Pastor>(pastors[0]);
   const [showPastorMenu, setShowPastorMenu] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [typingMessage, setTypingMessage] = useState("");
+
+  // live search state
+  const [pastorQuery, setPastorQuery] = useState("");
+  const [activeIdx, setActiveIdx] = useState(0);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const thinkingTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Fetch pastors.json once on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(PASTORS_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const list = normalizePastors(data);
+        if (list.length) {
+          setPastors(list);
+          setSelectedPastor(list[0]);
+          // update greeting label to match first fetched pastor
+          setMessages((prev) => prev.map((m, i) => (i === 0 ? { ...m, pastorName: list[0].name } : m)));
+        }
+      } catch (e) {
+        console.warn("Using fallback pastors:", e);
+      }
+    })();
+  }, []);
+
+  // Derived filtered list for live search
+  const filteredPastors = useMemo(() => {
+    const q = normalize(pastorQuery);
+    if (!q) return pastors;
+    return pastors.filter(
+      (p) => normalize(p.name).includes(q) || normalize(p.slug).includes(q) || normalize(p.era || "").includes(q)
+    );
+  }, [pastorQuery, pastors]);
+
+  // When menu opens, reset search and focus
+  useEffect(() => {
+    if (showPastorMenu) {
+      setPastorQuery("");
+      setActiveIdx(0);
+      setTimeout(() => searchInputRef.current?.focus(), 0);
+    }
+  }, [showPastorMenu]);
 
   // Auto-scroll
   useEffect(() => {
@@ -55,10 +123,10 @@ export default function Chatbot() {
     };
   }, []);
 
-  const fetchAnswerFromBackend = useCallback(async (question: string, pastorSlug: Pastor["slug"]) => {
+  const fetchAnswerFromBackend = useCallback(async (question: string, pastorSlug: string) => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60_000); // 60s guard
+    const timeout = setTimeout(() => controller.abort(), 60_000);
 
     try {
       const res = await fetch(`${apiUrl}/api/query`, {
@@ -67,12 +135,10 @@ export default function Chatbot() {
         body: JSON.stringify({ question, pastor: pastorSlug }),
         signal: controller.signal,
       });
-
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err?.error || `HTTP ${res.status}`);
       }
-
       const data = await res.json();
       return (data?.answer as string) || "Sorry, no response was returned.";
     } catch (e: any) {
@@ -84,11 +150,9 @@ export default function Chatbot() {
   }, []);
 
   const handleSendMessage = useCallback(() => {
-    if (!input.trim()) return;
+    if (!input.trim() || !selectedPastor?.slug) return;
 
-    // snapshot selection to avoid mid-flight pastor switch issues
-    const current = selectedPastor;
-
+    const current = selectedPastor; // snapshot
     const userMessage: Msg = { id: messages.length + 1, text: input.trim(), isUser: true };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
@@ -104,14 +168,12 @@ export default function Chatbot() {
     }, 450);
 
     fetchAnswerFromBackend(userMessage.text, current.slug).then((fullResponse) => {
-      // stop thinking
       if (thinkingTimer.current) clearInterval(thinkingTimer.current);
       setTypingMessage("");
 
-      // typewriter effect
       const words = fullResponse.split(" ");
       let idx = 0;
-      setTypingMessage(""); // reset
+      setTypingMessage("");
       if (streamTimer.current) clearInterval(streamTimer.current);
       streamTimer.current = setInterval(() => {
         setTypingMessage((prev) => prev + (idx > 0 ? " " : "") + words[idx]);
@@ -143,7 +205,7 @@ export default function Chatbot() {
       <header className="bg-indigo-700 text-white p-4 shadow-md">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-semibold">
-            What Would <span className="text-yellow-300">{selectedPastor.name}</span> Say?
+            What Would <span className="text-yellow-300">{selectedPastor?.name || "…"}</span> Say?
           </h1>
           <button className="p-2 rounded-full hover:bg-indigo-600 transition-colors" aria-label="Settings">
             <Settings size={20} />
@@ -161,15 +223,15 @@ export default function Chatbot() {
             aria-expanded={showPastorMenu}
           >
             <img
-              src={selectedPastor.avatar}
-              alt={selectedPastor.name}
+              src={selectedPastor?.avatar || "/avatars/placeholder.jpg"}
+              alt={selectedPastor?.name || "Pastor"}
               className="w-10 h-10 rounded-full border-2 border-white object-cover"
             />
             <div>
               <div className="font-medium flex items-center">
-                {selectedPastor.name} <ChevronDown size={16} className="ml-1" />
+                {selectedPastor?.name || "Loading…"} <ChevronDown size={16} className="ml-1" />
               </div>
-              <div className="text-xs text-indigo-200">{selectedPastor.era}</div>
+              <div className="text-xs text-indigo-200">{selectedPastor?.era || ""}</div>
             </div>
           </div>
 
@@ -186,27 +248,76 @@ export default function Chatbot() {
                     <X size={18} />
                   </button>
                 </div>
-                <div className="max-h-64 overflow-y-auto">
-                  {pastors.map((pastor) => (
-                    <div
-                      key={pastor.id}
-                      className={`flex items-center space-x-3 px-4 py-3 hover:bg-gray-100 cursor-pointer ${
-                        selectedPastor.id === pastor.id ? "bg-indigo-50" : ""
-                      }`}
-                      onClick={() => {
-                        setSelectedPastor(pastor);
-                        setShowPastorMenu(false);
+
+                {/* Live search */}
+                <div className="px-4 py-2 border-b">
+                  <div className="flex items-center rounded-md border border-gray-300 focus-within:ring-1 focus-within:ring-indigo-500">
+                    <Search size={16} className="mx-2 text-gray-400" />
+                    <input
+                      ref={searchInputRef}
+                      value={pastorQuery}
+                      onChange={(e) => {
+                        setPastorQuery(e.target.value);
+                        setActiveIdx(0);
                       }}
-                      role="option"
-                      aria-selected={selectedPastor.id === pastor.id}
-                    >
-                      <img src={pastor.avatar} alt={pastor.name} className="w-10 h-10 rounded-full object-cover" />
-                      <div>
-                        <div className="font-medium">{pastor.name}</div>
-                        <div className="text-sm text-gray-500">{pastor.era}</div>
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowDown") {
+                          e.preventDefault();
+                          setActiveIdx((i) => Math.min(i + 1, Math.max(0, filteredPastors.length - 1)));
+                        }
+                        if (e.key === "ArrowUp") {
+                          e.preventDefault();
+                          setActiveIdx((i) => Math.max(i - 1, 0));
+                        }
+                        if (e.key === "Enter") {
+                          const p = filteredPastors[activeIdx];
+                          if (p) {
+                            setSelectedPastor(p);
+                            setShowPastorMenu(false);
+                          }
+                        }
+                        if (e.key === "Escape") setShowPastorMenu(false);
+                      }}
+                      placeholder="Search by name, era, or slug…"
+                      className="w-full p-2 pr-3 bg-transparent focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                {/* Results */}
+                <div className="max-h-64 overflow-y-auto" role="listbox" aria-label="Pastors">
+                  {filteredPastors.length === 0 && (
+                    <div className="px-4 py-3 text-sm text-gray-500">No matches</div>
+                  )}
+                  {filteredPastors.map((pastor, idx) => {
+                    const isActive = idx === activeIdx;
+                    const isSelected = selectedPastor?.id === pastor.id;
+                    return (
+                      <div
+                        key={pastor.id}
+                        className={`flex items-center space-x-3 px-4 py-3 cursor-pointer ${
+                          isActive ? "bg-indigo-50" : "hover:bg-gray-100"
+                        }`}
+                        onMouseEnter={() => setActiveIdx(idx)}
+                        onClick={() => {
+                          setSelectedPastor(pastor);
+                          setShowPastorMenu(false);
+                        }}
+                        role="option"
+                        aria-selected={isSelected}
+                      >
+                        <img
+                          src={pastor.avatar || "/avatars/placeholder.jpg"}
+                          alt={pastor.name}
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <div>
+                          <div className="font-medium">{pastor.name}</div>
+                          <div className="text-sm text-gray-500">{pastor.era}</div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -235,8 +346,8 @@ export default function Chatbot() {
 
           {isTyping && (
             <div className="mb-4 flex justify-start">
-              <div className="max-w-3/4 bg-white border border-gray-200 shadow-sm rounded-lg p-4 italic text-gray-500">
-                <div className="font-medium text-indigo-700 mb-1">{selectedPastor.name}</div>
+              <div className="max-w-[75%] bg-white border border-gray-200 shadow-sm rounded-lg p-4 italic text-gray-500">
+                <div className="font-medium text-indigo-700 mb-1">{selectedPastor?.name || "…"}</div>
                 <p>{typingMessage}</p>
               </div>
             </div>
